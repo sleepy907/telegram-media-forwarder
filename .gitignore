@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+
+# Dados privados do Telegram Media Forwarder
+config.json
+historico.txt
+sessao.session
+*.session
+*.session-journal
+
+# Builds
+build/
+dist/
+*.spec
+
+# Sistema
+.DS_Store
+Thumbs.db
