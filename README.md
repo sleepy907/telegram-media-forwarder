@@ -235,7 +235,7 @@ Cada usuário deve fazer login com sua própria conta.
 
 ---
 
-## 🧪 Changelog resumido
+## 🧪 Changelog
 
 ### v0.0.1
 
