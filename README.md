@@ -1,4 +1,3 @@
-````md
 # Telegram Media Forwarder
 
 **Telegram Media Forwarder** é um aplicativo desktop desenvolvido em **Python** com interface gráfica em **Tkinter**, criado para automatizar o encaminhamento autorizado de mídias do Telegram usando a biblioteca **Telethon**.
@@ -82,12 +81,40 @@ O programa possui uma interface organizada em cards:
 
 ---
 
+## ⚙️ Como usar
+
+### Windows
+Baixe o `TelegramMediaForwarder-v0.0.1.exe` e execute diretamente, sem precisar instalar nada.
+
+### Fedora
+```bash
+sudo dnf install telegram-media-forwarder-v0.0.1.rpm
+```
+
+### Debian / Ubuntu / Linux Mint
+```bash
+sudo dpkg -i telegram-media-forwarder-v0.0.1.deb
+```
+
+### AppImage (qualquer Linux)
+```bash
+chmod +x TelegramMediaForwarder-v0.0.1.AppImage
+./TelegramMediaForwarder-v0.0.1.AppImage
+```
+
+### Rodar pelo código fonte
+```bash
+pip install telethon
+python3 telegram_media_forwarder.py
+```
+
+---
+
 ## 🔐 Login no Telegram
 
 A versão **v0.0.1** possui login integrado dentro do próprio aplicativo.
 
 O usuário informa:
-
 - API ID
 - API Hash
 - Telefone
@@ -95,6 +122,8 @@ O usuário informa:
 - Senha 2FA, se a conta possuir
 
 Após o login, o programa cria uma sessão local no computador do usuário, sem necessidade de usar terminal.
+
+> Para obter o API ID e API Hash acesse: https://my.telegram.org
 
 ---
 
@@ -108,191 +137,16 @@ Esses arquivos **não devem ser enviados para o GitHub**:
 sessao.session
 config.json
 historico.txt
-````
-
-Eles armazenam:
-
-| Arquivo          | Função                              |
-| ---------------- | ----------------------------------- |
-| `sessao.session` | Sessão local do Telegram            |
-| `config.json`    | Configurações do usuário            |
-| `historico.txt`  | Histórico de mídias já encaminhadas |
-
-No Linux, esses dados ficam em:
-
-```bash
-~/.local/share/telegram-media-forwarder
 ```
+
+Eles ficam salvos em:
+
+- **Linux:** `~/.local/share/telegram-media-forwarder/`
+- **Windows:** na mesma pasta do executável
 
 ---
 
-## 🔁 Como o histórico funciona
+## ⚠️ Aviso de uso
 
-Para evitar reenvio de mídias, o programa salva cada mídia enviada no arquivo `historico.txt`.
-
-A chave usada segue o formato:
-
-```text
-grupo_id:msg_id
-```
-
-Isso evita conflitos entre mensagens de grupos diferentes.
-
-O projeto também mantém compatibilidade com históricos antigos que usavam apenas o `msg_id`.
-
----
-
-## ⚙️ Como executar pelo código-fonte
-
-Clone o repositório:
-
-```bash
-git clone https://github.com/sleepy907/telegram-media-forwarder.git
-```
-
-Entre na pasta:
-
-```bash
-cd telegram-media-forwarder
-```
-
-Instale as dependências:
-
-```bash
-pip install -r requirements.txt
-```
-
-Execute o programa:
-
-```bash
-python3 telegram_media_forwarder.py
-```
-
----
-
-## 📦 Versões disponíveis
-
-A versão **v0.0.1** possui builds preparados para diferentes sistemas:
-
-### Windows
-
-Arquivo disponível:
-
-```text
-TelegramMediaForwarder-v0.0.1.exe
-```
-
-O usuário pode abrir o `.exe` diretamente, sem precisar instalar Python.
-
----
-
-### Fedora/Linux
-
-Pacote de build RPM disponível:
-
-```text
-telegram-media-forwarder-rpm-final-v001.tar.gz
-```
-
----
-
-### Debian/Ubuntu/Linux Mint
-
-Pacote disponível:
-
-```text
-telegram-media-forwarder-v0.0.1-debian-ubuntu.deb
-```
-
-Instalação:
-
-```bash
-sudo apt install ./telegram-media-forwarder-v0.0.1-debian-ubuntu.deb
-```
-
----
-
-### AppImage
-
-Também há um pacote de build para gerar versão AppImage em Linux.
-
----
-
-## 🛡️ Segurança
-
-Este projeto foi pensado para uso autorizado.
-
-O programa:
-
-* Não salva o API Hash automaticamente
-* Não inclui sessão do usuário nos pacotes
-* Não inclui histórico pessoal nos pacotes
-* Não inclui configurações pessoais nos pacotes
-* Não tenta burlar restrições do Telegram
-* Deve ser usado apenas com mídias próprias, autorizadas ou para backup pessoal
-
-Cada usuário deve fazer login com sua própria conta.
-
----
-
-## 🧪 Changelog resumido
-
-### v0.0.1
-
-* Interface gráfica profissional com Tkinter
-* Tema claro e escuro
-* Login Telegram dentro do aplicativo
-* Encaminhamento autorizado de mídias
-* Histórico para evitar duplicidade
-* Estatísticas em tempo real
-* Log de execução
-* Botões de iniciar, pausar e parar
-* Changelog interno
-* Preparação para atualizações futuras
-* Build Windows `.exe`
-* Build Debian/Ubuntu `.deb`
-* Build RPM para Fedora
-* Build AppImage preparado
-
----
-
-## 📌 Estrutura do projeto
-
-```text
-telegram-media-forwarder/
-├── telegram_media_forwarder.py
-├── logo.png
-├── README.md
-├── CHANGELOG.md
-├── requirements.txt
-├── .gitignore
-└── releases/
-    ├── TelegramMediaForwarder-v0.0.1.exe
-    ├── telegram-media-forwarder-v0.0.1-debian-ubuntu.deb
-    └── telegram-media-forwarder-rpm-final-v001.tar.gz
-```
-
----
-
-## 📥 Download
-
-Os arquivos de instalação da versão **v0.0.1** estão disponíveis na pasta `releases/` do repositório.
-
----
-
-## 👨‍💻 Autor
-
-Desenvolvido por **Bruno Vilela**.
-
-GitHub: [sleepy907](https://github.com/sleepy907)
-
----
-
-## ⚠️ Aviso
-
-Este projeto é destinado a fins educacionais, automação pessoal e portfólio.
-
-Use apenas com conteúdos próprios, autorizados ou para backup pessoal, respeitando as permissões e regras do Telegram.
-
-```
-```
+Use este programa apenas com mídias próprias, autorizadas ou para backup pessoal.
+Respeite os termos de uso do Telegram.
