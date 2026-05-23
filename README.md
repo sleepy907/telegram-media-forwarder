@@ -5,16 +5,6 @@
 
 O projeto permite encaminhar fotos, vídeos e documentos de uma origem do Telegram para um destino configurável, como **Mensagens Salvas**, grupos, canais ou bots, com controle de limite, delay, pausas automáticas, histórico de mídias já enviadas e login diretamente pelo próprio aplicativo.
 
----
-
-## 📌 Status do projeto
-
-Versão atual: **v0.0.1**
-
-Esta é a primeira versão oficial do projeto, já com interface gráfica, login integrado, histórico de envios, tema claro/escuro e versões empacotadas para Windows e Linux.
-
----
-
 ## 🚀 Principais recursos
 
 - Interface gráfica moderna em Python/Tkinter
