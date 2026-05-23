@@ -1,8 +1,13 @@
 # Telegram Media Forwarder
 
-**Telegram Media Forwarder** é um aplicativo desktop desenvolvido em **Python** com interface gráfica em **Tkinter**, criado para automatizar o encaminhamento autorizado de mídias do Telegram usando a biblioteca **Telethon**.
+**Telegram Media Forwarder** é um aplicativo desktop desenvolvido em **Python**
+com interface gráfica em **Tkinter**, criado para automatizar o encaminhamento
+autorizado de mídias do Telegram usando a biblioteca **Telethon**.
 
-O projeto permite encaminhar fotos, vídeos e documentos de uma origem do Telegram para um destino configurável, como **Mensagens Salvas**, grupos, canais ou bots, com controle de limite, delay, pausas automáticas, histórico de mídias já enviadas e login diretamente pelo próprio aplicativo.
+O projeto permite encaminhar fotos, vídeos e documentos de uma origem do Telegram
+para um destino configurável, como **Mensagens Salvas**, grupos, canais ou bots,
+com controle de limite, delay, pausas automáticas, histórico de mídias já enviadas
+e login diretamente pelo próprio aplicativo.
 
 ---
 
@@ -10,7 +15,9 @@ O projeto permite encaminhar fotos, vídeos e documentos de uma origem do Telegr
 
 Versão atual: **v0.0.1**
 
-Esta é a primeira versão oficial do projeto, já com interface gráfica, login integrado, histórico de envios, tema claro/escuro e versões empacotadas para Windows e Linux.
+Esta é a primeira versão oficial do projeto, já com interface gráfica,
+login integrado, histórico de envios, tema claro/escuro e versões
+empacotadas para Windows e Linux.
 
 ---
 
@@ -84,25 +91,31 @@ O programa possui uma interface organizada em cards:
 ## ⚙️ Como usar
 
 ### Windows
-Baixe o `TelegramMediaForwarder-v0.0.1.exe` e execute diretamente, sem precisar instalar nada.
+
+Baixe o `TelegramMediaForwarder-v0.0.1.exe` e execute diretamente,
+sem precisar instalar nada.
 
 ### Fedora
+
 ```bash
 sudo dnf install telegram-media-forwarder-v0.0.1.rpm
 ```
 
 ### Debian / Ubuntu / Linux Mint
+
 ```bash
 sudo dpkg -i telegram-media-forwarder-v0.0.1.deb
 ```
 
 ### AppImage (qualquer Linux)
+
 ```bash
 chmod +x TelegramMediaForwarder-v0.0.1.AppImage
 ./TelegramMediaForwarder-v0.0.1.AppImage
 ```
 
 ### Rodar pelo código fonte
+
 ```bash
 pip install telethon
 python3 telegram_media_forwarder.py
@@ -115,13 +128,15 @@ python3 telegram_media_forwarder.py
 A versão **v0.0.1** possui login integrado dentro do próprio aplicativo.
 
 O usuário informa:
+
 - API ID
 - API Hash
 - Telefone
 - Código recebido no Telegram
 - Senha 2FA, se a conta possuir
 
-Após o login, o programa cria uma sessão local no computador do usuário, sem necessidade de usar terminal.
+Após o login, o programa cria uma sessão local no computador do usuário,
+sem necessidade de usar terminal.
 
 > Para obter o API ID e API Hash acesse: https://my.telegram.org
 
