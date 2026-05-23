@@ -132,34 +132,6 @@ O projeto também mantém compatibilidade com históricos antigos que usavam ape
 
 ---
 
-## ⚙️ Como executar pelo código-fonte
-
-Clone o repositório:
-
-```bash
-git clone https://github.com/sleepy907/telegram-media-forwarder.git
-```
-
-Entre na pasta:
-
-```bash
-cd telegram-media-forwarder
-```
-
-Instale as dependências:
-
-```bash
-pip install -r requirements.txt
-```
-
-Execute o programa:
-
-```bash
-python3 telegram_media_forwarder.py
-```
-
----
-
 ## 📦 Versões disponíveis
 
 A versão **v0.0.1** possui builds preparados para diferentes sistemas:
