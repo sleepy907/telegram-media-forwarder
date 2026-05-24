@@ -252,7 +252,7 @@ GitHub: [sleepy907](https://github.com/sleepy907)
 
 ## ⚠️ Aviso
 
-Este projeto é destinado a fins educacionais, automação pessoal e portfólio.
+Este projeto é destinado a fins educacionais, automação pessoal.
 
 Use apenas com conteúdos próprios, autorizados ou para backup pessoal, respeitando as permissões e regras do Telegram.
 
