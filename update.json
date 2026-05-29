@@ -1,0 +1,13 @@
+{
+    "version": "0.1.0",
+    "release_url": "https://github.com/sleepy907/telegram-media-forwarder/releases/tag/v0.1.0",
+    "changelog": [
+        "Sistema real de atualização via update.json.",
+        "Importar/exportar histórico.",
+        "Tela de Ajuda dentro do aplicativo.",
+        "Logs mais claros e informativos.",
+        "Estatísticas mais claras com tempo restante estimado.",
+        "Correções de bugs da versão anterior.",
+        "Opção para salvar API Hash neste computador."
+    ]
+}
