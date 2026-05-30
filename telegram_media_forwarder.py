@@ -21,10 +21,9 @@ CONFIG = "config.json"
 SESSION = "sessao"
 LOGO_FILE = "logo.png"
 
-UPDATE_URL = ""
-
+UPDATE_URL = "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/update.json"
+CHANGELOG_URL = "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/CHANGELOG.md"
 LATEST_VERSION_PLACEHOLDER = "0.1.0"
-
 
 THEMES = {
     "dark": {
@@ -1521,6 +1520,7 @@ class App(tk.Tk):
         )
         self.open_release_btn.pack(anchor="w")
 
+        note_text = "Configure UPDATE_URL no código apontando para o update.json do GitHub."
         if UPDATE_URL:
             note_text = "A checagem usa o update.json configurado no GitHub."
 
@@ -1536,8 +1536,18 @@ class App(tk.Tk):
                 parts.append(0)
         return tuple(parts)
 
+    def _fetch_url_text(self, url, timeout=10):
+        """Baixa texto puro de uma URL."""
+        req = urllib.request.Request(
+            url,
+            headers={"User-Agent": f"{APP_NAME}/{APP_VERSION}"}
+        )
+
+        with urllib.request.urlopen(req, timeout=timeout) as response:
+            return response.read().decode("utf-8")
+
     def _fetch_update_info(self):
-        """Consulta o update.json hospedado no GitHub."""
+        """Consulta o update.json e carrega o CHANGELOG.md completo quando possível."""
         if not UPDATE_URL:
             return {
                 "version": LATEST_VERSION_PLACEHOLDER,
@@ -1545,26 +1555,48 @@ class App(tk.Tk):
                 "changelog": "UPDATE_URL ainda não configurado no código."
             }
 
-        req = urllib.request.Request(UPDATE_URL, headers={"User-Agent": f"{APP_NAME}/{APP_VERSION}"})
-
-        with urllib.request.urlopen(req, timeout=10) as response:
-            raw = response.read().decode("utf-8")
-
+        raw = self._fetch_url_text(UPDATE_URL)
         data = json.loads(raw)
 
         version = str(data.get("version", "")).strip()
         release_url = str(data.get("release_url", "")).strip()
+
+        if not version:
+            raise ValueError("O update.json não possui o campo obrigatório: version.")
+
+        # O app deve priorizar o CHANGELOG.md completo.
+        # Se o update.json tiver changelog_url, usa ele.
+        # Se não tiver, usa a constante CHANGELOG_URL.
+        changelog_url = str(data.get("changelog_url", "")).strip() or CHANGELOG_URL
         changelog = data.get("changelog", "")
+
+        try:
+            if changelog_url:
+                remote_changelog = self._fetch_url_text(changelog_url).strip()
+                if remote_changelog:
+                    changelog = remote_changelog
+        except Exception as e:
+            if isinstance(changelog, list):
+                changelog = "\n".join(f"• {item}" for item in changelog)
+            else:
+                changelog = str(changelog).strip()
+
+            changelog = (
+                f"{changelog}\n\n"
+                f"Aviso: não foi possível carregar o CHANGELOG.md completo.\n"
+                f"Detalhe técnico: {e}"
+            )
 
         if isinstance(changelog, list):
             changelog = "\n".join(f"• {item}" for item in changelog)
         else:
             changelog = str(changelog).strip()
 
-        if not version:
-            raise ValueError("O update.json não possui o campo obrigatório: version.")
-
-        return {"version": version, "release_url": release_url, "changelog": changelog}
+        return {
+            "version": version,
+            "release_url": release_url,
+            "changelog": changelog
+        }
 
     def _check_update_in_window(self, win=None):
         if hasattr(self, "update_window_status"):
@@ -1608,6 +1640,8 @@ class App(tk.Tk):
                 self.after(0, do_success)
 
             except Exception as e:
+                error_detail = str(e)
+
                 def do_error():
                     if hasattr(self, "update_window_latest"):
                         self.update_window_latest.config(text="Última versão: erro ao checar")
@@ -1615,7 +1649,11 @@ class App(tk.Tk):
                     if hasattr(self, "update_window_status"):
                         self.update_window_status.config(text="Status: erro ao checar atualização", fg=self.colors["RED"])
 
-                    messagebox.showerror("Erro ao checar atualização", f"Não foi possível consultar atualizações.\n\nDetalhe: {e}", parent=win)
+                    messagebox.showerror(
+                        "Erro ao checar atualização",
+                        f"Não foi possível consultar atualizações.\n\nDetalhe: {error_detail}",
+                        parent=win
+                    )
 
                 self.after(0, do_error)
 
@@ -1743,6 +1781,18 @@ SEGURANÇA
 
         if self._latest_changelog:
             changelog = self._latest_changelog
+        else:
+            try:
+                if CHANGELOG_URL:
+                    remote_changelog = self._fetch_url_text(CHANGELOG_URL).strip()
+                    if remote_changelog:
+                        changelog = remote_changelog
+            except Exception as e:
+                changelog = (
+                    f"{changelog}\n\n"
+                    f"Aviso: não foi possível carregar o CHANGELOG.md do GitHub.\n"
+                    f"Detalhe técnico: {e}"
+                )
 
         changelog_box.insert("1.0", changelog)
         changelog_box.config(state="disabled")
