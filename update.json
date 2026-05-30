@@ -1,14 +1,8 @@
 {
-    "version": "0.1.0",
-    "release_url": "https://github.com/sleepy907/telegram-media-forwarder/releases/tag/v0.1.0",
-<<<<<<< HEAD
-<<<<<<< HEAD
-    "changelog_url": "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/refs/heads/main/CHANGELOG.md",
-=======
->>>>>>> ee5b201 (Atualiza update.json para v0.1.0)
-=======
+    "version": "0.2.0",
+    "release_url": "https://github.com/sleepy907/telegram-media-forwarder/releases/tag/v0.2.0",
+
     "changelog_url": "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/CHANGELOG.md",
->>>>>>> c4e7685 (Release v0.1.0)
     "changelog": [
         "Sistema real de atualização via update.json.",
         "Importar/exportar histórico.",
@@ -18,8 +12,5 @@
         "Correções de bugs da versão anterior.",
         "Opção para salvar API Hash neste computador."
     ]
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> ee5b201 (Atualiza update.json para v0.1.0)
+

@@ -1,200 +1,23 @@
-
 import asyncio
 import threading
 import os
-import json
 import time
-import urllib.request
 import webbrowser
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox, filedialog
 
-from telethon import TelegramClient
-from telethon.tl.types import MessageMediaPhoto, MessageMediaDocument, DocumentAttributeSticker
-from telethon.errors import FloodWaitError, RPCError, SessionPasswordNeededError, ApiIdInvalidError, PhoneCodeInvalidError, PasswordHashInvalidError
+from telethon.errors import ApiIdInvalidError, SessionPasswordNeededError, PhoneCodeInvalidError, PasswordHashInvalidError
 
-APP_NAME = "Telegram Media Forwarder"
-APP_VERSION = "0.1.0"
-
-HISTORICO = "historico.txt"
-CONFIG = "config.json"
-SESSION = "sessao"
-LOGO_FILE = "logo.png"
-
-UPDATE_URL = "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/update.json"
-CHANGELOG_URL = "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/CHANGELOG.md"
-LATEST_VERSION_PLACEHOLDER = "0.1.0"
-
-THEMES = {
-    "dark": {
-        "BG": "#090914",
-        "BG2": "#10101f",
-        "BG3": "#17172b",
-        "BG4": "#22223a",
-        "CARD": "#111122",
-        "CARD2": "#15152a",
-        "BORDER": "#30295f",
-        "BORDER2": "#4c2bbf",
-        "TEXT": "#f4f1ff",
-        "SUBTEXT": "#aaa3c7",
-        "MUTED": "#746d91",
-        "ACCENT": "#7c3aed",
-        "ACCENT2": "#a855f7",
-        "ACCENT3": "#c084fc",
-        "GREEN": "#4ade80",
-        "YELLOW": "#fbbf24",
-        "RED": "#fb7185",
-        "BLUE": "#38bdf8",
-        "ENTRY": "#0c0c1a",
-        "LOG_BG": "#080815"
-    },
-    "light": {
-        "BG": "#f7f5ff",
-        "BG2": "#ffffff",
-        "BG3": "#f1edff",
-        "BG4": "#e8ddff",
-        "CARD": "#ffffff",
-        "CARD2": "#fbfaff",
-        "BORDER": "#ded6f7",
-        "BORDER2": "#8b5cf6",
-        "TEXT": "#1f1833",
-        "SUBTEXT": "#625777",
-        "MUTED": "#8a7ca3",
-        "ACCENT": "#7c3aed",
-        "ACCENT2": "#8b5cf6",
-        "ACCENT3": "#a855f7",
-        "GREEN": "#16a34a",
-        "YELLOW": "#d97706",
-        "RED": "#e11d48",
-        "BLUE": "#0284c7",
-        "ENTRY": "#ffffff",
-        "LOG_BG": "#ffffff"
-    }
-}
-
-
-FONT_TITLE = ("Segoe UI", 18, "bold")
-FONT_SUB = ("Segoe UI", 9)
-FONT = ("Segoe UI", 10)
-FONT_B = ("Segoe UI", 10, "bold")
-FONT_S = ("Segoe UI", 9)
-FONT_SECTION = ("Segoe UI", 9, "bold")
-FONT_BTN = ("Segoe UI", 12, "bold")
-MONO = ("Courier New", 9)
-
-
-def resource_dir():
-    return os.path.dirname(os.path.abspath(__file__))
-
-
-def resource_path(filename):
-    return os.path.join(resource_dir(), filename)
-
-
-def app_dir():
-    base = os.environ.get("XDG_DATA_HOME")
-    if not base:
-        base = os.path.join(os.path.expanduser("~"), ".local", "share")
-
-    path = os.path.join(base, "telegram-media-forwarder")
-    os.makedirs(path, exist_ok=True)
-    return path
-
-
-def app_path(filename):
-    return os.path.join(app_dir(), filename)
-
-
-def salvar_config(data):
-    """Salva somente dados não sensíveis.
-
-    O API Hash não é salvo por segurança.
-    """
-    with open(app_path(CONFIG), "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
-
-def carregar_config():
-    path = app_path(CONFIG)
-    if not os.path.exists(path):
-        return {}
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return {}
-
-
-def carregar_historico():
-    path = app_path(HISTORICO)
-    if not os.path.exists(path):
-        return set()
-
-    historico = set()
-    with open(path, "r", encoding="utf-8") as f:
-        for linha in f:
-            item = linha.strip()
-            if item:
-                historico.add(item)
-
-    return historico
-
-
-def montar_chave_historico(grupo_id, msg_id):
-    return f"{grupo_id}:{msg_id}"
-
-
-def salvar_id(grupo_id, msg_id):
-    with open(app_path(HISTORICO), "a", encoding="utf-8") as f:
-        f.write(f"{montar_chave_historico(grupo_id, msg_id)}\n")
-
-
-def limpar_historico():
-    with open(app_path(HISTORICO), "w", encoding="utf-8") as f:
-        f.write("")
-
-
-def media_eh_sticker(media):
-    """Retorna True quando a mídia for figurinha/sticker do Telegram."""
-    try:
-        if not isinstance(media, MessageMediaDocument):
-            return False
-
-        document = getattr(media, "document", None)
-        if not document:
-            return False
-
-        attributes = getattr(document, "attributes", []) or []
-        return any(isinstance(attr, DocumentAttributeSticker) for attr in attributes)
-    except Exception:
-        return False
-
-
-def nome_entidade_telegram(entity, fallback="desconhecido"):
-    """Retorna um nome amigável para grupos, canais, bots, usuários e destinos."""
-    try:
-        title = getattr(entity, "title", None)
-        if title:
-            return str(title)
-
-        first_name = getattr(entity, "first_name", "") or ""
-        last_name = getattr(entity, "last_name", "") or ""
-        full_name = f"{first_name} {last_name}".strip()
-        if full_name:
-            return full_name
-
-        username = getattr(entity, "username", None)
-        if username:
-            return f"@{username}"
-
-        entity_id = getattr(entity, "id", None)
-        if entity_id:
-            return f"{fallback} ({entity_id})"
-    except Exception:
-        pass
-
-    return str(fallback)
+from .constantes import (
+    APP_NAME, APP_VERSION, THEMES, LOGO_FILE,
+    CHANGELOG_URL, UPDATE_URL,
+    FONT_TITLE, FONT_SUB, FONT, FONT_B, FONT_S, FONT_SECTION, FONT_BTN, MONO
+)
+from .utilidades import resource_path, app_dir, app_path
+from .configuracao import GerenciadorConfig
+from .historico import GerenciadorHistorico
+from .atualizacao import GerenciadorAtualizacao
+from .servico_telegram import ServicoTelegram
 
 
 class App(tk.Tk):
@@ -223,6 +46,11 @@ class App(tk.Tk):
         self.logo_img = None
         self.widgets_to_theme = []
 
+        # Gerenciadores (módulos separados)
+        self.config = GerenciadorConfig()
+        self.historico = GerenciadorHistorico()
+        self.atualizacao = GerenciadorAtualizacao()
+
         # Estado usado pela tela de login
         self._login_phone = ""
         self._login_phone_code_hash = None
@@ -244,7 +72,20 @@ class App(tk.Tk):
         self.batch_var = tk.StringVar(value="30")
         self.pause_var = tk.StringVar(value="30")
 
-        cfg = carregar_config()
+        self.drop_author_var = tk.BooleanVar()
+        self.drop_captions_var = tk.BooleanVar()
+
+        def _on_caption_toggle(*args):
+            if self.drop_captions_var.get():
+                self.drop_author_var.set(True)
+        self.drop_captions_var.trace_add("write", _on_caption_toggle)
+
+        def _on_author_toggle(*args):
+            if not self.drop_author_var.get() and self.drop_captions_var.get():
+                self.drop_author_var.set(True)
+        self.drop_author_var.trace_add("write", _on_author_toggle)
+
+        cfg = self.config.carregar()
         self.api_id_var.set(cfg.get("api_id", ""))
 
         save_api_hash = bool(cfg.get("save_api_hash", False))
@@ -258,6 +99,8 @@ class App(tk.Tk):
         self.limit_var.set(cfg.get("limit", "500"))
         self.batch_var.set(cfg.get("batch", "30"))
         self.pause_var.set(cfg.get("pause", "30"))
+        self.drop_author_var.set(bool(cfg.get("drop_author", False)))
+        self.drop_captions_var.set(bool(cfg.get("drop_captions", False)))
         self.theme_name = cfg.get("theme", "dark") if cfg.get("theme", "dark") in THEMES else "dark"
         self.colors = THEMES[self.theme_name]
 
@@ -324,7 +167,7 @@ class App(tk.Tk):
         self.canvas.bind_all("<Button-5>", self._on_mousewheel_linux)
 
         self.content = tk.Frame(self.root, bg=self.colors["BG"])
-        self.content.pack(fill="both", expand=True, padx=12, pady=12)
+        self.content.pack(fill="both", expand=True, padx=16, pady=16)
         self.widgets_to_theme.append((self.content, "BG"))
 
         self._build_header()
@@ -419,7 +262,7 @@ class App(tk.Tk):
     def _build_header(self):
         c = self.colors
 
-        self.header = tk.Frame(self.content, bg=c["CARD"], highlightthickness=1, highlightbackground=c["BORDER"])
+        self.header = tk.Frame(self.content, bg=c["CARD"], highlightthickness=0, highlightbackground=c["BORDER"])
         self.header.pack(fill="x", pady=(0, 8))
         self.widgets_to_theme.append((self.header, "CARD", "BORDER"))
 
@@ -464,7 +307,7 @@ class App(tk.Tk):
         right.pack(side="right")
         self.widgets_to_theme.append((right, "CARD"))
 
-        self.status_card = tk.Frame(right, bg=c["BG2"], highlightthickness=1, highlightbackground=c["BORDER"])
+        self.status_card = tk.Frame(right, bg=c["BG2"], highlightthickness=0, highlightbackground=c["BORDER"])
         self.status_card.pack(side="left", padx=(0, 10))
         self.widgets_to_theme.append((self.status_card, "BG2", "BORDER"))
 
@@ -500,7 +343,7 @@ class App(tk.Tk):
     def _build_action_bar(self):
         c = self.colors
 
-        self.action_panel = tk.Frame(self.content, bg=c["CARD"], highlightthickness=1, highlightbackground=c["BORDER"])
+        self.action_panel = tk.Frame(self.content, bg=c["CARD"], highlightthickness=0, highlightbackground=c["BORDER"])
         self.action_panel.pack(fill="x", pady=(0, 8))
         self.widgets_to_theme.append((self.action_panel, "CARD", "BORDER"))
 
@@ -508,14 +351,14 @@ class App(tk.Tk):
         self.btn_row.pack(anchor="center", pady=10)
         self.widgets_to_theme.append((self.btn_row, "CARD"))
 
-        self.btn_start = self._action_btn(self.btn_row, "▶  Iniciar", self._start, active=True)
+        self.btn_start = self._action_btn(self.btn_row, "Iniciar", self._start, active=True)
         self.btn_start.pack(side="left", padx=10)
 
-        self.btn_pause = self._action_btn(self.btn_row, "⏸  Pausar", self._toggle_pause)
+        self.btn_pause = self._action_btn(self.btn_row, "Pausar", self._toggle_pause)
         self.btn_pause.config(state="disabled")
         self.btn_pause.pack(side="left", padx=10)
 
-        self.btn_stop = self._action_btn(self.btn_row, "■  Parar", self._stop, danger=True)
+        self.btn_stop = self._action_btn(self.btn_row, "Parar", self._stop, danger=True)
         self.btn_stop.config(state="disabled")
         self.btn_stop.pack(side="left", padx=10)
 
@@ -544,7 +387,7 @@ class App(tk.Tk):
         card = self._card(self.left_col)
         card.pack(fill="x", pady=(0, 10))
 
-        self._section_title(card, "🔐  CREDENCIAIS")
+        self._section_title(card, "Credenciais")
 
         grid = tk.Frame(card, bg=c["CARD"])
         grid.pack(fill="x", padx=16, pady=(0, 8))
@@ -553,10 +396,10 @@ class App(tk.Tk):
         self._field(grid, "API ID", self.api_id_var, row=0, col=0)
         self._field(grid, "API Hash", self.api_hash_var, row=0, col=1, show="●")
 
-        test = self._outline_btn(grid, "🔗  Testar campos", self._test_fields)
+        test = self._outline_btn(grid, "Testar campos", self._test_fields)
         test.grid(row=1, column=0, sticky="ew", pady=(10, 0), padx=(0, 6))
 
-        login_btn = self._outline_btn(grid, "🔑  Login Telegram", self._open_login_window)
+        login_btn = self._outline_btn(grid, "Login Telegram", self._open_login_window)
         login_btn.grid(row=1, column=1, sticky="ew", pady=(10, 0), padx=(6, 0))
 
         self.save_hash_check = tk.Checkbutton(
@@ -595,7 +438,7 @@ class App(tk.Tk):
         card = self._card(self.left_col)
         card.pack(fill="x", pady=(0, 10))
 
-        self._section_title(card, "⚙  CONFIGURAÇÕES")
+        self._section_title(card, "Configurações")
 
         grid = tk.Frame(card, bg=c["CARD"])
         grid.pack(fill="x", padx=16, pady=(0, 8))
@@ -609,6 +452,42 @@ class App(tk.Tk):
         self._field(grid, "Pausa a cada X", self.batch_var, row=2, col=1, width=12)
         self._field(grid, "Pausa (seg)", self.pause_var, row=3, col=0, width=12)
 
+        self.drop_author_check = tk.Checkbutton(
+            grid,
+            text="Ocultar autor original",
+            variable=self.drop_author_var,
+            command=self._save_current_config,
+            bg=c["CARD"],
+            fg=c["SUBTEXT"],
+            activebackground=c["CARD"],
+            activeforeground=c["TEXT"],
+            selectcolor=c["CARD2"],
+            font=FONT_S,
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2"
+        )
+        self.drop_author_check.grid(row=4, column=0, sticky="w", pady=(8, 0), padx=(0, 6))
+        self.widgets_to_theme.append((self.drop_author_check, "CARD", None, "SUBTEXT"))
+
+        self.drop_captions_check = tk.Checkbutton(
+            grid,
+            text="Remover legenda/texto",
+            variable=self.drop_captions_var,
+            command=self._save_current_config,
+            bg=c["CARD"],
+            fg=c["SUBTEXT"],
+            activebackground=c["CARD"],
+            activeforeground=c["TEXT"],
+            selectcolor=c["CARD2"],
+            font=FONT_S,
+            bd=0,
+            highlightthickness=0,
+            cursor="hand2"
+        )
+        self.drop_captions_check.grid(row=4, column=1, sticky="w", pady=(8, 0), padx=(6, 0))
+        self.widgets_to_theme.append((self.drop_captions_check, "CARD", None, "SUBTEXT"))
+
         grid.columnconfigure(0, weight=1)
         grid.columnconfigure(1, weight=1)
 
@@ -617,22 +496,22 @@ class App(tk.Tk):
         card = self._card(self.left_col)
         card.pack(fill="x", pady=(0, 10))
 
-        self._section_title(card, "📊  ESTATÍSTICAS")
+        self._section_title(card, "Estatísticas")
 
         row = tk.Frame(card, bg=c["CARD"])
         row.pack(fill="x", padx=16, pady=(0, 8))
         self.widgets_to_theme.append((row, "CARD"))
 
-        self.sent_card, self.sent_value = self._stat_box(row, "✈", "Enviadas agora", "0", "GREEN")
+        self.sent_card, self.sent_value = self._stat_box(row, "", "Enviadas agora", "0", "GREEN")
         self.sent_card.pack(side="left", fill="x", expand=True, padx=(0, 8))
 
-        self.skip_card, self.skip_value = self._stat_box(row, "⏭", "Já no histórico", "0", "YELLOW")
+        self.skip_card, self.skip_value = self._stat_box(row, "", "Já no histórico", "0", "YELLOW")
         self.skip_card.pack(side="left", fill="x", expand=True, padx=8)
 
-        self.err_card, self.err_value = self._stat_box(row, "⚠", "Erros", "0", "RED")
+        self.err_card, self.err_value = self._stat_box(row, "", "Erros", "0", "RED")
         self.err_card.pack(side="left", fill="x", expand=True, padx=(8, 0))
 
-        bottom = tk.Frame(card, bg=c["CARD2"], highlightthickness=1, highlightbackground=c["BORDER"])
+        bottom = tk.Frame(card, bg=c["CARD2"], highlightthickness=0, highlightbackground=c["BORDER"])
         bottom.pack(fill="x", padx=16, pady=(0, 10))
         self.widgets_to_theme.append((bottom, "CARD2", "BORDER"))
 
@@ -681,10 +560,10 @@ class App(tk.Tk):
         history_row.pack(fill="x", padx=16, pady=(0, 10))
         self.widgets_to_theme.append((history_row, "CARD"))
 
-        import_btn = self._outline_btn(history_row, "📥  Importar histórico", self._import_history)
+        import_btn = self._outline_btn(history_row, "Importar histórico", self._import_history)
         import_btn.pack(side="left", fill="x", expand=True, padx=(0, 6))
 
-        export_btn = self._outline_btn(history_row, "📤  Exportar histórico", self._export_history)
+        export_btn = self._outline_btn(history_row, "Exportar histórico", self._export_history)
         export_btn.pack(side="left", fill="x", expand=True, padx=(6, 0))
 
     def _build_log_card(self):
@@ -697,14 +576,14 @@ class App(tk.Tk):
         top.pack(fill="x", padx=16, pady=(14, 8))
         self.widgets_to_theme.append((top, "CARD"))
 
-        title = tk.Label(top, text="📄  LOG", bg=c["CARD"], fg=c["ACCENT3"], font=FONT_SECTION)
+        title = tk.Label(top, text="Log", bg=c["CARD"], fg=c["TEXT"], font=FONT_SECTION)
         title.pack(side="left")
-        self.widgets_to_theme.append((title, "CARD", None, "ACCENT3"))
+        self.widgets_to_theme.append((title, "CARD", None, "TEXT"))
 
-        clear = self._outline_btn(top, "🗑 Limpar", self._clear_log)
+        clear = self._outline_btn(top, "Limpar", self._clear_log)
         clear.pack(side="right")
 
-        log_frame = tk.Frame(card, bg=c["LOG_BG"], highlightthickness=1, highlightbackground=c["BORDER"])
+        log_frame = tk.Frame(card, bg=c["LOG_BG"], highlightthickness=0, highlightbackground=c["BORDER"])
         log_frame.pack(fill="both", expand=True, padx=16, pady=(0, 10))
         self.widgets_to_theme.append((log_frame, "LOG_BG", "BORDER"))
 
@@ -727,7 +606,7 @@ class App(tk.Tk):
         self.log.tag_config("ok", foreground=c["GREEN"])
         self.log.tag_config("warn", foreground=c["YELLOW"])
         self.log.tag_config("err", foreground=c["RED"])
-        self.log.tag_config("info", foreground=c["ACCENT3"])
+        self.log.tag_config("info", foreground=c["SUBTEXT"])
         self.log.tag_config("muted", foreground=c["SUBTEXT"])
 
     def _build_footer(self):
@@ -752,15 +631,15 @@ class App(tk.Tk):
     # ────────────────────────────────────────────────────────────
     def _card(self, parent):
         c = self.colors
-        f = tk.Frame(parent, bg=c["CARD"], highlightthickness=1, highlightbackground=c["BORDER"])
+        f = tk.Frame(parent, bg=c["CARD"], highlightthickness=0, highlightbackground=c["BORDER"])
         self.widgets_to_theme.append((f, "CARD", "BORDER"))
         return f
 
     def _section_title(self, parent, text):
         c = self.colors
-        lbl = tk.Label(parent, text=text, bg=c["CARD"], fg=c["ACCENT3"], font=FONT_SECTION)
+        lbl = tk.Label(parent, text=text, bg=c["CARD"], fg=c["TEXT"], font=FONT_SECTION)
         lbl.pack(anchor="w", padx=16, pady=(10, 6))
-        self.widgets_to_theme.append((lbl, "CARD", None, "ACCENT3"))
+        self.widgets_to_theme.append((lbl, "CARD", None, "TEXT"))
         return lbl
 
     def _field(self, parent, text, var, row, col, width=22, show=""):
@@ -892,7 +771,7 @@ class App(tk.Tk):
             text=text,
             command=cmd,
             bg=c["CARD2"],
-            fg=c["ACCENT3"],
+            fg=c["SUBTEXT"],
             activebackground=c["BG4"],
             activeforeground=c["TEXT"],
             font=FONT_B,
@@ -904,21 +783,22 @@ class App(tk.Tk):
             highlightthickness=1,
             highlightbackground=c["BORDER2"]
         )
-        self.widgets_to_theme.append((btn, "CARD2", "BORDER2", "ACCENT3"))
+        self.widgets_to_theme.append((btn, "CARD2", "BORDER2", "SUBTEXT"))
         return btn
 
     def _stat_box(self, parent, icon, title, value, color_key):
         c = self.colors
 
-        f = tk.Frame(parent, bg=c["CARD2"], highlightthickness=1, highlightbackground=c["BORDER"])
+        f = tk.Frame(parent, bg=c["CARD2"], highlightthickness=0, highlightbackground=c["BORDER"])
         self.widgets_to_theme.append((f, "CARD2", "BORDER"))
 
-        icon_lbl = tk.Label(f, text=icon, bg=c["CARD2"], fg=c[color_key], font=("Segoe UI", 20))
-        icon_lbl.pack(side="left", padx=12, pady=12)
-        self.widgets_to_theme.append((icon_lbl, "CARD2", None, color_key))
+        if icon:
+            icon_lbl = tk.Label(f, text=icon, bg=c["CARD2"], fg=c[color_key], font=("Segoe UI", 20))
+            icon_lbl.pack(side="left", padx=12, pady=12)
+            self.widgets_to_theme.append((icon_lbl, "CARD2", None, color_key))
 
         txt = tk.Frame(f, bg=c["CARD2"])
-        txt.pack(side="left", fill="both", expand=True, pady=10)
+        txt.pack(side="left", fill="both", expand=True, padx=12, pady=10)
         self.widgets_to_theme.append((txt, "CARD2"))
 
         title_lbl = tk.Label(txt, text=title, bg=c["CARD2"], fg=c["SUBTEXT"], font=FONT_S)
@@ -944,7 +824,7 @@ class App(tk.Tk):
             # Reduz a imagem mantendo-a leve no cabeçalho.
             # A imagem original é grande; subsample reduz sem depender de Pillow.
             w = img.width()
-            factor = max(1, w // 110)
+            factor = max(1, w // 45)
             img = img.subsample(factor, factor)
 
             self.logo_img = img
@@ -989,7 +869,7 @@ class App(tk.Tk):
             self.log.tag_config("ok", foreground=c["GREEN"])
             self.log.tag_config("warn", foreground=c["YELLOW"])
             self.log.tag_config("err", foreground=c["RED"])
-            self.log.tag_config("info", foreground=c["ACCENT3"])
+            self.log.tag_config("info", foreground=c["SUBTEXT"])
             self.log.tag_config("muted", foreground=c["SUBTEXT"])
         except Exception:
             pass
@@ -1010,13 +890,15 @@ class App(tk.Tk):
             "batch": self.batch_var.get().strip(),
             "pause": self.pause_var.get().strip(),
             "theme": self.theme_name,
-            "save_api_hash": bool(self.save_api_hash_var.get())
+            "save_api_hash": bool(self.save_api_hash_var.get()),
+            "drop_author": bool(self.drop_author_var.get()),
+            "drop_captions": bool(self.drop_captions_var.get())
         }
 
         if self.save_api_hash_var.get():
             data["api_hash"] = self.api_hash_var.get().strip()
 
-        salvar_config(data)
+        self.config.salvar(data)
 
     def _clear_log(self):
         self.log.config(state="normal")
@@ -1047,9 +929,9 @@ class App(tk.Tk):
 
         title = tk.Label(
             card,
-            text="🔑 Login no Telegram",
+            text="Login no Telegram",
             bg=c["CARD"],
-            fg=c["ACCENT3"],
+            fg=c["TEXT"],
             font=("Segoe UI", 14, "bold")
         )
         title.pack(anchor="w", padx=16, pady=(14, 6))
@@ -1166,7 +1048,7 @@ class App(tk.Tk):
         form.columnconfigure(0, weight=1)
         form.columnconfigure(1, weight=1)
 
-        status_box = tk.Frame(card, bg=c["CARD2"], highlightthickness=1, highlightbackground=c["BORDER"])
+        status_box = tk.Frame(card, bg=c["CARD2"], highlightthickness=0, highlightbackground=c["BORDER"])
         status_box.pack(fill="x", padx=16, pady=(0, 12))
 
         status_lbl = tk.Label(
@@ -1185,7 +1067,7 @@ class App(tk.Tk):
 
         send_btn = tk.Button(
             buttons,
-            text="📨 Enviar código",
+            text="Enviar código",
             command=lambda: self._login_send_code(
                 win,
                 phone_var.get().strip(),
@@ -1208,7 +1090,7 @@ class App(tk.Tk):
 
         confirm_btn = tk.Button(
             buttons,
-            text="✅ Confirmar login",
+            text="Confirmar login",
             command=lambda: self._login_confirm_code(
                 win,
                 code_var.get().strip(),
@@ -1232,7 +1114,7 @@ class App(tk.Tk):
 
         check_btn = tk.Button(
             buttons,
-            text="🔍 Verificar sessão",
+            text="Verificar sessão",
             command=lambda: self._login_check_session(status_lbl),
             bg=c["BG3"],
             fg=c["TEXT"],
@@ -1325,19 +1207,15 @@ class App(tk.Tk):
     async def _login_send_code_async(self, phone):
         api_id, api_hash = self._login_get_api_credentials()
 
-        client = TelegramClient(app_path(SESSION), api_id, api_hash)
-        await client.connect()
+        servico = ServicoTelegram(api_id, api_hash)
+        await servico.conectar()
 
         try:
-            if await client.is_user_authorized():
-                self._login_phone_code_hash = None
-                return
-
-            sent = await client.send_code_request(phone)
-            self._login_phone_code_hash = sent.phone_code_hash
+            phone_code_hash = await servico.enviar_codigo(phone)
+            self._login_phone_code_hash = phone_code_hash
             self._save_current_config()
         finally:
-            await client.disconnect()
+            await servico.desconectar()
 
     def _login_confirm_code(self, win, code, password, status_lbl, confirm_btn):
         if not self._login_phone:
@@ -1381,32 +1259,19 @@ class App(tk.Tk):
     async def _login_confirm_code_async(self, code, password):
         api_id, api_hash = self._login_get_api_credentials()
 
-        client = TelegramClient(app_path(SESSION), api_id, api_hash)
-        await client.connect()
+        servico = ServicoTelegram(api_id, api_hash)
+        await servico.conectar()
 
         try:
-            if await client.is_user_authorized():
-                return
-
-            if password and not code:
-                await client.sign_in(password=password)
-                return
-
-            try:
-                await client.sign_in(
-                    phone=self._login_phone,
-                    code=code,
-                    phone_code_hash=self._login_phone_code_hash
-                )
-            except SessionPasswordNeededError:
-                if password:
-                    await client.sign_in(password=password)
-                else:
-                    raise
-
+            await servico.confirmar_login(
+                self._login_phone,
+                code,
+                self._login_phone_code_hash,
+                password
+            )
             self._save_current_config()
         finally:
-            await client.disconnect()
+            await servico.desconectar()
 
     def _login_check_session(self, status_lbl):
         self._login_set_status(status_lbl, "Status: verificando sessão...", "YELLOW")
@@ -1416,7 +1281,9 @@ class App(tk.Tk):
             asyncio.set_event_loop(loop)
 
             try:
-                authorized = loop.run_until_complete(self._login_check_session_async())
+                api_id, api_hash = self._login_get_api_credentials()
+                servico = ServicoTelegram(api_id, api_hash)
+                authorized = loop.run_until_complete(servico.verificar_sessao())
                 if authorized:
                     self._login_set_status(status_lbl, "Status: sessão encontrada e autorizada.", "GREEN")
                     self._log("Sessão do Telegram verificada com sucesso.", "ok")
@@ -1429,16 +1296,6 @@ class App(tk.Tk):
 
         threading.Thread(target=worker, daemon=True).start()
 
-    async def _login_check_session_async(self):
-        api_id, api_hash = self._login_get_api_credentials()
-
-        client = TelegramClient(app_path(SESSION), api_id, api_hash)
-        await client.connect()
-
-        try:
-            return await client.is_user_authorized()
-        finally:
-            await client.disconnect()
 
 
     def _open_update_window(self):
@@ -1455,10 +1312,10 @@ class App(tk.Tk):
         container = tk.Frame(win, bg=c["BG"])
         container.pack(fill="both", expand=True, padx=18, pady=18)
 
-        card = tk.Frame(container, bg=c["CARD"], highlightthickness=1, highlightbackground=c["BORDER"])
+        card = tk.Frame(container, bg=c["CARD"], highlightthickness=0, highlightbackground=c["BORDER"])
         card.pack(fill="both", expand=True)
 
-        title = tk.Label(card, text="↻  Checar atualizações", bg=c["CARD"], fg=c["ACCENT3"], font=("Segoe UI", 14, "bold"))
+        title = tk.Label(card, text="Checar atualizações", bg=c["CARD"], fg=c["TEXT"], font=("Segoe UI", 14, "bold"))
         title.pack(anchor="w", padx=18, pady=(12, 6))
 
         desc = tk.Label(
@@ -1472,7 +1329,7 @@ class App(tk.Tk):
         )
         desc.pack(anchor="w", padx=18, pady=(0, 10))
 
-        info_box = tk.Frame(card, bg=c["CARD2"], highlightthickness=1, highlightbackground=c["BORDER"])
+        info_box = tk.Frame(card, bg=c["CARD2"], highlightthickness=0, highlightbackground=c["BORDER"])
         info_box.pack(fill="x", padx=18, pady=(0, 10))
 
         self.update_window_installed = tk.Label(info_box, text=f"Versão atual: {APP_VERSION}", bg=c["CARD2"], fg=c["TEXT"], font=FONT_B)
@@ -1487,10 +1344,10 @@ class App(tk.Tk):
         btns = tk.Frame(card, bg=c["CARD"])
         btns.pack(fill="x", padx=18, pady=(0, 10))
 
-        check_btn = tk.Button(btns, text="🔎  Checar atualização", command=lambda: self._check_update_in_window(win), bg=c["ACCENT"], fg="#ffffff", activebackground=c["ACCENT2"], activeforeground="#ffffff", font=FONT_B, bd=0, relief="flat", cursor="hand2", padx=14, pady=10)
+        check_btn = tk.Button(btns, text="Checar atualização", command=lambda: self._check_update_in_window(win), bg=c["ACCENT"], fg="#ffffff", activebackground=c["ACCENT2"], activeforeground="#ffffff", font=FONT_B, bd=0, relief="flat", cursor="hand2", padx=14, pady=10)
         check_btn.pack(side="left")
 
-        changelog_btn = tk.Button(btns, text="📄  Changelog", command=lambda: self._show_changelog_placeholder(win), bg=c["CARD2"], fg=c["ACCENT3"], activebackground=c["BG4"], activeforeground=c["TEXT"], font=FONT_B, bd=0, relief="flat", cursor="hand2", padx=14, pady=10)
+        changelog_btn = tk.Button(btns, text="Changelog", command=lambda: self._show_changelog_placeholder(win), bg=c["CARD2"], fg=c["SUBTEXT"], activebackground=c["BG4"], activeforeground=c["TEXT"], font=FONT_B, bd=0, relief="flat", cursor="hand2", padx=14, pady=10)
         changelog_btn.pack(side="left", padx=8)
 
         close_btn = tk.Button(btns, text="Fechar", command=win.destroy, bg=c["BG3"], fg=c["TEXT"], activebackground=c["BG4"], activeforeground=c["TEXT"], font=FONT_B, bd=0, relief="flat", cursor="hand2", padx=14, pady=10)
@@ -1505,7 +1362,7 @@ class App(tk.Tk):
 
         self.open_release_btn = tk.Button(
             self.release_row,
-            text="⬇  Abrir release oficial no GitHub",
+            text="Abrir release oficial no GitHub",
             command=self._open_latest_release,
             bg=c["CARD2"],
             fg=c["ACCENT3"],
@@ -1527,76 +1384,7 @@ class App(tk.Tk):
         note = tk.Label(card, text=note_text, bg=c["CARD"], fg=c["MUTED"], font=FONT_S, justify="left", wraplength=500)
         note.pack(anchor="w", padx=18, pady=(0, 8))
 
-    def _version_tuple(self, version):
-        parts = []
-        for piece in str(version).replace("v", "").split("."):
-            try:
-                parts.append(int(piece))
-            except ValueError:
-                parts.append(0)
-        return tuple(parts)
 
-    def _fetch_url_text(self, url, timeout=10):
-        """Baixa texto puro de uma URL."""
-        req = urllib.request.Request(
-            url,
-            headers={"User-Agent": f"{APP_NAME}/{APP_VERSION}"}
-        )
-
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            return response.read().decode("utf-8")
-
-    def _fetch_update_info(self):
-        """Consulta o update.json e carrega o CHANGELOG.md completo quando possível."""
-        if not UPDATE_URL:
-            return {
-                "version": LATEST_VERSION_PLACEHOLDER,
-                "release_url": "",
-                "changelog": "UPDATE_URL ainda não configurado no código."
-            }
-
-        raw = self._fetch_url_text(UPDATE_URL)
-        data = json.loads(raw)
-
-        version = str(data.get("version", "")).strip()
-        release_url = str(data.get("release_url", "")).strip()
-
-        if not version:
-            raise ValueError("O update.json não possui o campo obrigatório: version.")
-
-        # O app deve priorizar o CHANGELOG.md completo.
-        # Se o update.json tiver changelog_url, usa ele.
-        # Se não tiver, usa a constante CHANGELOG_URL.
-        changelog_url = str(data.get("changelog_url", "")).strip() or CHANGELOG_URL
-        changelog = data.get("changelog", "")
-
-        try:
-            if changelog_url:
-                remote_changelog = self._fetch_url_text(changelog_url).strip()
-                if remote_changelog:
-                    changelog = remote_changelog
-        except Exception as e:
-            if isinstance(changelog, list):
-                changelog = "\n".join(f"• {item}" for item in changelog)
-            else:
-                changelog = str(changelog).strip()
-
-            changelog = (
-                f"{changelog}\n\n"
-                f"Aviso: não foi possível carregar o CHANGELOG.md completo.\n"
-                f"Detalhe técnico: {e}"
-            )
-
-        if isinstance(changelog, list):
-            changelog = "\n".join(f"• {item}" for item in changelog)
-        else:
-            changelog = str(changelog).strip()
-
-        return {
-            "version": version,
-            "release_url": release_url,
-            "changelog": changelog
-        }
 
     def _check_update_in_window(self, win=None):
         if hasattr(self, "update_window_status"):
@@ -1607,7 +1395,7 @@ class App(tk.Tk):
 
         def worker():
             try:
-                info = self._fetch_update_info()
+                info = self.atualizacao.buscar_info_atualizacao()
                 latest = info["version"]
                 current = APP_VERSION
                 release_url = info.get("release_url", "")
@@ -1620,7 +1408,7 @@ class App(tk.Tk):
                     if hasattr(self, "update_window_latest"):
                         self.update_window_latest.config(text=f"Última versão: {latest}")
 
-                    if self._version_tuple(latest) > self._version_tuple(current):
+                    if self.atualizacao.versao_tupla(latest) > self.atualizacao.versao_tupla(current):
                         if hasattr(self, "update_window_status"):
                             self.update_window_status.config(text="Status: atualização disponível", fg=self.colors["YELLOW"])
 
@@ -1667,6 +1455,7 @@ class App(tk.Tk):
         webbrowser.open(self._latest_release_url)
 
     def _show_changelog_placeholder(self, parent=None):
+        c = self.colors
         win = tk.Toplevel(parent if parent else self)
         win.title("Changelog")
         win.geometry("720x620")
@@ -1697,7 +1486,7 @@ class App(tk.Tk):
         )
         card.pack(fill="both", expand=True)
 
-        changelog_title_version = "v0.1.0"
+        changelog_title_version = "v0.2.0"
         if self._latest_changelog:
             try:
                 latest_text = self.update_window_latest.cget("text")
@@ -1708,9 +1497,9 @@ class App(tk.Tk):
 
         title = tk.Label(
             card,
-            text=f"📋 Changelog — Telegram Media Forwarder {changelog_title_version}",
+            text=f"Changelog — Telegram Media Forwarder {changelog_title_version}",
             bg=self.colors["CARD"],
-            fg=self.colors["ACCENT3"],
+            fg=self.colors["TEXT"],
             font=("Segoe UI", 14, "bold")
         )
         title.pack(anchor="w", padx=16, pady=(14, 8))
@@ -1731,7 +1520,7 @@ class App(tk.Tk):
             font=("Segoe UI", 10),
             bg=self.colors["LOG_BG"],
             fg=self.colors["TEXT"],
-            insertbackground=self.colors["ACCENT3"],
+            insertbackground=self.colors["TEXT"],
             bd=0,
             wrap="word",
             padx=12,
@@ -1741,42 +1530,20 @@ class App(tk.Tk):
         changelog_box.pack(side="left", fill="both", expand=True)
         scrollbar.config(command=changelog_box.yview)
 
-        changelog = """Changelog — Telegram Media Forwarder v0.1.0
+        changelog = """Changelog — Telegram Media Forwarder v0.2.0
 
-ADICIONADO
-• Sistema real de atualização via update.json.
-• Botão para abrir a release oficial no GitHub quando houver nova versão disponível.
-• Importação de histórico antigo.
-• Exportação de histórico atual para backup ou migração.
-• Tela de Ajuda dentro do aplicativo.
-• Botão Sobre o APP dentro da tela de Ajuda.
-• Opção para salvar API Hash neste computador.
-• Estimativa de tempo restante com base nos dados preenchidos.
+NOVIDADES
+• Modo Álbum: Preservação de lotes de mídia. As mídias agrupadas agora chegam intactas como mosaico no destino.
+• Modo Limpo: Adicionada opção para ocultar autor ("Encaminhada de...") e remover legendas da mídia original.
+• Novo motor interno estruturado (Modularização de Arquitetura S.O.L.I.D).
+• Segurança de Histórico Avançada com gravação em lote (Batch RAM), protegendo contra queda de conexão ou encerramento forçado.
+• Refatoração Visual Profissional: Novo design "Flat" limpo e adoção rigorosa do tema Catppuccin Macchiato.
+• Regras Visuais: Bloqueio automático de "Ocultar autor" se a legenda for removida (respeitando limitações da API).
 
-MELHORADO
-• Mensagens do log mais claras para o usuário.
-• Log mostra nome da origem conectada.
-• Log mostra destino configurado.
-• Log informa início, pausa, retomada, parada e finalização.
-• Estatísticas mais claras, com enviadas agora, já no histórico, erros, total processado, tempo decorrido e tempo restante.
-• Área de estatísticas com informações melhor alinhadas.
-• Janela de Atualizações mais limpa, exibindo release apenas quando houver atualização.
-• Tela de Ajuda com informações sobre API ID, API Hash, login, histórico, sessão e segurança.
-• API Hash continua sem ser salvo por padrão, mas agora pode ser salvo se o usuário permitir.
-
-CORRIGIDO
-• Scroll desnecessário em tela cheia.
-• Changelog abrindo atrás da janela de Atualizações.
-• Changelog não fechando corretamente.
-• Scroll do Changelog interferindo no scroll da tela principal.
-• Colagem de texto nos campos.
-• Figurinhas/Stickers sendo encaminhados indevidamente.
-• Ordem de processamento alterada para ir da mídia mais antiga para a mais recente.
-
-SEGURANÇA
-• Dados pessoais continuam fora do instalador e do executável.
-• Sessão, histórico e configurações permanecem armazenados localmente.
-• API Hash só é salvo no config.json se a opção correspondente estiver marcada.
+MELHORIAS E CORREÇÕES
+• Pausas inteligentes calculadas por lote (O álbum todo recebe apenas 1 delay no final).
+• Logs otimizados com relatórios em tempo real do processamento do buffer de álbuns e uso do "Modo Limpo".
+• Melhor desempenho de gravação de arquivos e alocação de memória no processamento contínuo.
 """
 
         if self._latest_changelog:
@@ -1784,7 +1551,7 @@ SEGURANÇA
         else:
             try:
                 if CHANGELOG_URL:
-                    remote_changelog = self._fetch_url_text(CHANGELOG_URL).strip()
+                    remote_changelog = self.atualizacao.buscar_texto_url(CHANGELOG_URL).strip()
                     if remote_changelog:
                         changelog = remote_changelog
             except Exception as e:
@@ -1801,10 +1568,10 @@ SEGURANÇA
             card,
             text="Fechar",
             command=fechar_changelog,
-            bg=self.colors["BG3"],
-            fg=self.colors["TEXT"],
-            activebackground=self.colors["BG4"],
-            activeforeground=self.colors["TEXT"],
+            bg=c["BG3"],
+            fg=c["TEXT"],
+            activebackground=c["BG4"],
+            activeforeground=c["TEXT"],
             font=FONT_B,
             bd=0,
             relief="flat",
@@ -1837,9 +1604,9 @@ SEGURANÇA
 
         title = tk.Label(
             card,
-            text="❔ Ajuda — Telegram Media Forwarder",
+            text="Ajuda — Telegram Media Forwarder",
             bg=c["CARD"],
-            fg=c["ACCENT3"],
+            fg=c["TEXT"],
             font=("Segoe UI", 14, "bold")
         )
         title.pack(anchor="w", padx=16, pady=(14, 8))
@@ -2236,7 +2003,7 @@ Exportar histórico:
 
     def _history_total_count(self):
         try:
-            return len(carregar_historico())
+            return self.historico.total()
         except Exception:
             return 0
 
@@ -2275,30 +2042,6 @@ Exportar histórico:
         self._start_time = time.time()
         self._update_stats()
 
-    def _normalize_history_lines(self, lines):
-        """Normaliza linhas do histórico, mantendo compatibilidade com histórico antigo."""
-        normalized = []
-
-        for line in lines:
-            item = str(line).strip()
-            if not item:
-                continue
-
-            # Aceita formato antigo: msg_id
-            # Aceita formato novo: grupo_id:msg_id
-            normalized.append(item)
-
-        return normalized
-
-    def _read_history_file(self, path):
-        with open(path, "r", encoding="utf-8") as f:
-            return self._normalize_history_lines(f.readlines())
-
-    def _write_history_file(self, items):
-        with open(app_path(HISTORICO), "w", encoding="utf-8") as f:
-            for item in items:
-                f.write(f"{item}\n")
-
     def _import_history(self):
         if self._running:
             messagebox.showwarning(
@@ -2318,101 +2061,68 @@ Exportar histórico:
         if not selected:
             return
 
-        try:
-            imported_items = self._read_history_file(selected)
+        resultado = self.historico.importar(selected)
 
-            if not imported_items:
-                messagebox.showwarning(
-                    "Histórico vazio",
-                    "O arquivo selecionado não possui registros válidos."
-                )
-                return
+        if resultado["erro"] and resultado["adicionados"] == 0 and resultado["total"] == 0:
+            messagebox.showwarning("Histórico vazio", resultado["erro"])
+            return
 
-            current_items = []
-            current_path = app_path(HISTORICO)
-
-            if os.path.exists(current_path):
-                current_items = self._read_history_file(current_path)
-
-            merged = []
-            seen = set()
-
-            for item in current_items + imported_items:
-                if item not in seen:
-                    seen.add(item)
-                    merged.append(item)
-
-            self._write_history_file(merged)
-
-            added = len([item for item in imported_items if item not in set(current_items)])
-            self._log(
-                f"Histórico importado com sucesso. Novos registros: {max(0, added)} | Total: {len(merged)}.",
-                "ok"
-            )
-
-            self._update_stats()
-
-            messagebox.showinfo(
-                "Histórico importado",
-                f"Histórico importado com sucesso.\n\n"
-                f"Novos registros adicionados: {max(0, added)}\n"
-                f"Total no histórico atual: {len(merged)}"
-            )
-
-        except Exception as e:
-            self._log(f"Erro ao importar histórico: {e}", "err")
+        if resultado["erro"]:
+            self._log(f"Erro ao importar histórico: {resultado['erro']}", "err")
             messagebox.showerror(
                 "Erro ao importar histórico",
-                f"Não foi possível importar o histórico.\n\nDetalhe: {e}"
+                f"Não foi possível importar o histórico.\n\nDetalhe: {resultado['erro']}"
             )
+            return
+
+        self._log(
+            f"Histórico importado com sucesso. Novos registros: {resultado['adicionados']} | Total: {resultado['total']}.",
+            "ok"
+        )
+
+        self._update_stats()
+
+        messagebox.showinfo(
+            "Histórico importado",
+            f"Histórico importado com sucesso.\n\n"
+            f"Novos registros adicionados: {resultado['adicionados']}\n"
+            f"Total no histórico atual: {resultado['total']}"
+        )
 
     def _export_history(self):
-        try:
-            current_path = app_path(HISTORICO)
+        selected = filedialog.asksaveasfilename(
+            title="Exportar histórico",
+            defaultextension=".txt",
+            initialfile="historico.txt",
+            filetypes=[
+                ("Arquivo de histórico", "*.txt"),
+                ("Todos os arquivos", "*.*")
+            ]
+        )
 
-            if not os.path.exists(current_path):
-                messagebox.showwarning(
-                    "Histórico não encontrado",
-                    "Nenhum historico.txt foi encontrado para exportar."
-                )
-                return
+        if not selected:
+            return
 
-            items = self._read_history_file(current_path)
+        resultado = self.historico.exportar(selected)
 
-            selected = filedialog.asksaveasfilename(
-                title="Exportar histórico",
-                defaultextension=".txt",
-                initialfile="historico.txt",
-                filetypes=[
-                    ("Arquivo de histórico", "*.txt"),
-                    ("Todos os arquivos", "*.*")
-                ]
-            )
-
-            if not selected:
-                return
-
-            with open(selected, "w", encoding="utf-8") as f:
-                for item in items:
-                    f.write(f"{item}\n")
-
-            self._log(
-                f"Histórico exportado com sucesso. Registros exportados: {len(items)}.",
-                "ok"
-            )
-
-            messagebox.showinfo(
-                "Histórico exportado",
-                f"Histórico exportado com sucesso.\n\n"
-                f"Registros exportados: {len(items)}"
-            )
-
-        except Exception as e:
-            self._log(f"Erro ao exportar histórico: {e}", "err")
+        if resultado["erro"]:
+            self._log(f"Erro ao exportar histórico: {resultado['erro']}", "err")
             messagebox.showerror(
                 "Erro ao exportar histórico",
-                f"Não foi possível exportar o histórico.\n\nDetalhe: {e}"
+                f"Não foi possível exportar o histórico.\n\nDetalhe: {resultado['erro']}"
             )
+            return
+
+        self._log(
+            f"Histórico exportado com sucesso. Registros exportados: {resultado['exportados']}.",
+            "ok"
+        )
+
+        messagebox.showinfo(
+            "Histórico exportado",
+            f"Histórico exportado com sucesso.\n\n"
+            f"Registros exportados: {resultado['exportados']}"
+        )
 
     def _confirm_clear_history(self):
         if self._running:
@@ -2426,7 +2136,7 @@ Exportar histórico:
         )
 
         if ok:
-            limpar_historico()
+            self.historico.limpar()
             self._log("Histórico limpo com sucesso.", "warn")
 
     # ────────────────────────────────────────────────────────────
@@ -2478,7 +2188,9 @@ Exportar histórico:
             "api_hash": api_hash,
             "group": group,
             "dest": dest,
-            "filter": filter_
+            "filter": filter_,
+            "drop_author": self.drop_author_var.get(),
+            "drop_captions": self.drop_captions_var.get()
         }
 
         threading.Thread(target=self._run_async, args=(params,), daemon=True).start()
@@ -2523,16 +2235,14 @@ Exportar histórico:
             self.after(0, self._on_finish)
 
     async def _forward(self, p):
-        ja_enviados = carregar_historico()
-        self._log(f"Histórico carregado: {len(ja_enviados)} registros.", "info")
         self._log("Conectando ao Telegram...", "info")
 
         try:
-            client = TelegramClient(app_path(SESSION), p["api_id"], p["api_hash"])
-            await client.connect()
+            servico = ServicoTelegram(p["api_id"], p["api_hash"])
+            await servico.conectar()
 
             try:
-                if not await client.is_user_authorized():
+                if not await servico.esta_autorizado():
                     self._log("Sessão não encontrada ou não autorizada.", "err")
                     self._log('Clique em "Login Telegram" para criar sua sessão pelo aplicativo.', "warn")
                     self._set_status("Login necessário", self.colors["YELLOW"])
@@ -2541,172 +2251,49 @@ Exportar histórico:
                 self._log("Conectado ao Telegram com sucesso.", "ok")
                 self._set_status("Conectado", self.colors["GREEN"])
 
-                try:
-                    saved = await client.get_input_entity(p["dest"])
+                def _inc_sent():
+                    self.sent_count += 1
+                    return self.sent_count
 
-                    if str(p["dest"]).strip().lower() == "me":
-                        dest_label = "Mensagens Salvas"
-                    else:
-                        try:
-                            dest_full = await client.get_entity(p["dest"])
-                            dest_label = nome_entidade_telegram(dest_full, p["dest"])
-                        except Exception:
-                            dest_label = p["dest"]
+                def _inc_skip():
+                    self.skip_count += 1
 
-                except Exception as e:
-                    self._log(f"Não foi possível acessar o destino: {p['dest']}", "err")
-                    self._log("Verifique se o destino existe e se sua conta tem permissão para enviar mensagens nele.", "warn")
-                    self._log(f"Detalhe técnico: {e}", "muted")
-                    return
+                def _inc_already_saved():
+                    self.already_saved_count += 1
 
-                try:
-                    group = await client.get_input_entity(p["group"])
-                    group_full = await client.get_entity(p["group"])
-                    group_id = getattr(group_full, "id", "desconhecido")
-                    group_label = nome_entidade_telegram(group_full, p["group"])
-                except Exception as e:
-                    self._log(f"Não foi possível acessar a origem: {p['group']}", "err")
-                    self._log("Verifique se o link, grupo ou canal está correto e se sua conta tem acesso a ele.", "warn")
-                    self._log(f"Detalhe técnico: {e}", "muted")
-                    return
+                def _inc_ignored():
+                    self.ignored_count += 1
 
-                self._log(f"Conectado à origem: {group_label}", "ok")
-                self._log(f"ID interno da origem: {group_id}", "info")
-                self._log(f"Destino configurado: {dest_label}", "ok")
+                def _inc_error():
+                    self.error_count += 1
 
-                filter_id = None
-                if p["filter"]:
-                    try:
-                        filter_ent = await client.get_entity(p["filter"])
-                        filter_id = filter_ent.id
-                        filter_label = nome_entidade_telegram(filter_ent, p["filter"])
-                        self._log(f"Filtro ativo: {filter_label}", "info")
-                        self._log(f"ID interno do filtro: {filter_id}", "muted")
-                    except Exception as e:
-                        self._log("Filtro inválido ou inacessível.", "err")
-                        self._log("Verifique se o filtro foi preenchido corretamente e se sua conta tem acesso a ele.", "warn")
-                        self._log(f"Detalhe técnico: {e}", "muted")
-                        return
+                callbacks = {
+                    "on_log": self._log,
+                    "on_status": self._set_status,
+                    "on_progress": self._set_progress,
+                    "on_update_stats": self._update_stats,
+                    "get_live_config": self._get_live_config,
+                    "is_stopped": lambda: self._stopped,
+                    "is_paused": lambda: self._paused,
+                    "get_colors": lambda: self.colors,
+                    "inc_sent": _inc_sent,
+                    "inc_skip": _inc_skip,
+                    "inc_already_saved": _inc_already_saved,
+                    "inc_ignored": _inc_ignored,
+                    "inc_error": _inc_error,
+                    "get_sent_count": lambda: self.sent_count,
+                    "get_skip_count": lambda: self.skip_count,
+                    "get_error_count": lambda: self.error_count,
+                }
 
-                self._log("Iniciando encaminhamento de mídias...", "ok")
-                self._set_status("Encaminhando", self.colors["GREEN"])
-
-                # Processa em ordem cronológica: da mídia mais antiga para a mais recente.
-                async for msg in client.iter_messages(group, reverse=True):
-                    if self._stopped:
-                        self._log(f"Execução interrompida pelo usuário. Mídias enviadas nesta execução: {self.sent_count}.", "warn")
-                        return
-
-                    while self._paused:
-                        await asyncio.sleep(0.3)
-                        if self._stopped:
-                            return
-
-                    delay, batch, pause_secs, limit = self._get_live_config()
-
-                    if not msg.media:
-                        continue
-
-                    if not isinstance(msg.media, (MessageMediaPhoto, MessageMediaDocument)):
-                        self.skip_count += 1
-                        self.ignored_count += 1
-                        self._update_stats()
-                        continue
-
-                    if media_eh_sticker(msg.media):
-                        self.skip_count += 1
-                        self._update_stats()
-                        self._log("Mídia ignorada: figurinha/sticker.", "info")
-                        continue
-
-                    chave = montar_chave_historico(group_id, msg.id)
-
-                    # Compatibilidade com histórico antigo: ignora também linhas antigas com só msg.id.
-                    if chave in ja_enviados or str(msg.id) in ja_enviados:
-                        self.skip_count += 1
-                        self.already_saved_count += 1
-                        self._update_stats()
-                        continue
-
-                    if filter_id is not None:
-                        fwd = msg.fwd_from
-
-                        if not fwd:
-                            self.skip_count += 1
-                            self._update_stats()
-                            continue
-
-                        from_id = (
-                            getattr(fwd.from_id, "channel_id", None)
-                            or getattr(fwd.from_id, "chat_id", None)
-                            or getattr(fwd.from_id, "user_id", None)
-                        )
-
-                        if from_id != filter_id:
-                            self.skip_count += 1
-                            self._update_stats()
-                            continue
-
-                    try:
-                        await client.forward_messages(saved, msg)
-
-                        salvar_id(group_id, msg.id)
-                        ja_enviados.add(chave)
-
-                        self.sent_count += 1
-                        self._update_stats()
-                        self._set_progress(self.sent_count, limit)
-
-                        self._log(f"[{self.sent_count}/{limit}] Mídia encaminhada. ID {msg.id}", "ok")
-
-                        if self.sent_count >= limit:
-                            self._log(f"Encaminhamento concluído. {self.sent_count} mídias enviadas nesta execução.", "ok")
-                            self._set_status("Concluído", self.colors["ACCENT3"])
-                            return
-
-                        if self.sent_count % batch == 0:
-                            self._log(f"Pausa automática iniciada: aguardando {pause_secs}s após {self.sent_count} mídias enviadas.", "warn")
-                            self._set_status(f"Pausa {pause_secs}s", self.colors["YELLOW"])
-
-                            for _ in range(pause_secs * 2):
-                                if self._stopped:
-                                    return
-                                if self._paused:
-                                    break
-                                await asyncio.sleep(0.5)
-
-                            if not self._paused:
-                                self._set_status("Encaminhando", self.colors["GREEN"])
-
-                        await asyncio.sleep(delay)
-
-                    except FloodWaitError as e:
-                        self.error_count += 1
-                        self._update_stats()
-                        self._log(f"O Telegram pediu uma pausa temporária. Aguardando {e.seconds}s antes de continuar.", "warn")
-                        self._set_status(f"FloodWait {e.seconds}s", self.colors["YELLOW"])
-                        await asyncio.sleep(e.seconds + 5)
-                        self._set_status("Encaminhando", self.colors["GREEN"])
-
-                    except RPCError as e:
-                        self.error_count += 1
-                        self._update_stats()
-                        self._log(f"O Telegram recusou o envio da mídia ID {msg.id}.", "err")
-                        self._log("O envio foi pulado e o programa continuará com as próximas mídias.", "warn")
-                        self._log(f"Detalhe técnico: {e}", "muted")
-
-                    except Exception as e:
-                        self.error_count += 1
-                        self._update_stats()
-                        self._log(f"Erro inesperado ao processar a mídia ID {msg.id}.", "err")
-                        self._log("O programa continuará tentando processar as próximas mídias.", "warn")
-                        self._log(f"Detalhe técnico: {e}", "muted")
-
-                self._log("Fim da origem. Não há mais mídias para processar dentro do limite configurado.", "ok")
-                self._log(f"Resumo final — Enviadas: {self.sent_count} | Já salvas/ignoradas: {self.skip_count} | Erros: {self.error_count}", "info")
+                await servico.encaminhar_midias(
+                    params=p,
+                    historico=self.historico,
+                    callbacks=callbacks
+                )
 
             finally:
-                await client.disconnect()
+                await servico.desconectar()
 
         except ApiIdInvalidError:
             self.error_count += 1
@@ -2737,7 +2324,3 @@ Exportar histórico:
             self._log(f"Detalhe técnico: {e}", "muted")
             self._set_status("Erro", self.colors["RED"])
 
-
-if __name__ == "__main__":
-    app = App()
-    app.mainloop()

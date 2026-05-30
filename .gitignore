@@ -10,9 +10,13 @@ env/
 # Dados privados do Telegram Media Forwarder
 config.json
 historico.txt
+historico.txt.bak
 sessao.session
 *.session
 *.session-journal
+
+# Documentos internos
+docs/historico_desenvolvimento.md
 
 # Builds
 build/
