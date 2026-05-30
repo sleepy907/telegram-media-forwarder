@@ -15,10 +15,22 @@ e login diretamente pelo próprio aplicativo.
 
 Versão atual: **v0.1.0**
 
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+Versão com interface profissional completa, login integrado, sistema de atualização
+via GitHub, importar/exportar histórico, tela de ajuda, logs e estatísticas melhorados
+e correção de todos os bugs identificados nos testes da versão anterior.
+=======
+>>>>>>> Stashed changes
 A versão v0.1.0 marca a primeira versão pública organizada do Telegram Media Forwarder.
 Esta atualização transforma o projeto de uma versão inicial funcional em um aplicativo
 mais completo, com melhorias de usabilidade, segurança, histórico, logs, estatísticas,
 tela de ajuda e preparação para atualizações reais via GitHub.
+<<<<<<< Updated upstream
+=======
+>>>>>>> 514ee67 (docs: atualiza README para v0.1.0)
+>>>>>>> Stashed changes
 
 ---
 
@@ -201,6 +213,77 @@ Respeite os termos de uso do Telegram.
 
 ## 📋 Changelog
 
+<<<<<<< Updated upstream
+### v0.1.0 — 31/05/2026
+
+**Adicionado**
+- Sistema real de atualização via `update.json`
+- Consulta de versão mais recente a partir de arquivo hospedado no GitHub
+- Comparação automática entre versão instalada e versão disponível
+- Exibição de status de atualização dentro do aplicativo
+- Changelog carregado a partir do `update.json`, quando disponível
+- Botão para abrir a release oficial no GitHub somente quando houver nova versão
+- Função para importar histórico antigo
+- Função para exportar o histórico atual
+- Mesclagem de histórico sem duplicar registros
+- Tela de Ajuda dentro do aplicativo
+- Explicações internas sobre API ID, API Hash, login, origem, destino, sessão e segurança
+- Botão Sobre o APP dentro da tela de Ajuda
+- Opção para salvar o API Hash neste computador
+- Estimativa de tempo restante baseada em limite, delay e pausas configuradas
+
+**Melhorado**
+- Logs mais claros e fáceis de entender
+- Log informa conexão, origem conectada, destino configurado, início, pausa, retomada e finalização
+- Tela de Atualizações reorganizada — botão de release aparece apenas quando há atualização
+- Estatísticas reorganizadas com mídias enviadas, já no histórico, erros, total, tempo decorrido e tempo restante
+- Ordem de processamento ajustada da mais antiga para a mais recente
+- `config.json` passou a suportar salvamento opcional do API Hash
+
+**Corrigido**
+- Scroll desnecessário em tela cheia
+- Changelog abrindo atrás da janela de Atualizações
+- Changelog não fechando corretamente
+- Conflito entre scroll do Changelog e scroll da tela principal
+- Comportamento de colagem nos campos de entrada
+- Encaminhamento indevido de figurinhas/stickers do Telegram
+- Ordem de processamento das mídias
+
+**Segurança**
+- Dados pessoais continuam fora do instalador e dos pacotes de distribuição
+- API Hash não é salvo automaticamente
+- API Hash só é salvo se o usuário marcar a opção correspondente
+- Histórico continua sendo usado para evitar reenvio de mídias já processadas
+
+---
+=======
+<<<<<<< HEAD
+### v0.1.0
+- Sistema real de atualização via update.json no GitHub
+- Importar e exportar histórico
+- Tela de ajuda completa dentro do aplicativo
+- Opção para salvar API Hash localmente
+- Logs mais claros com nome da origem e destino
+- Estatísticas com tempo restante estimado
+- Stickers/figurinhas ignorados automaticamente
+- Processamento em ordem cronológica (mais antiga → mais recente)
+- Correção do scroll desnecessário em tela cheia
+- Correção do Changelog abrindo atrás da janela de Atualizações
+- Correção do scroll do Changelog interferindo na tela principal
+- Correção da colagem de texto nos campos
+>>>>>>> Stashed changes
+
+### v0.0.1
+
+- Versão inicial com interface gráfica profissional
+- Login do Telegram integrado no próprio aplicativo
+- Tema escuro e claro
+- Histórico local para evitar mídias repetidas
+- Builds para Windows e Linux
+
+---
+
+=======
 ### v0.1.0 — 31/05/2026
 
 **Adicionado**
@@ -254,4 +337,5 @@ Respeite os termos de uso do Telegram.
 
 ---
 
+>>>>>>> 514ee67 (docs: atualiza README para v0.1.0)
 🔗 github.com/sleepy907/telegram-media-forwarder
