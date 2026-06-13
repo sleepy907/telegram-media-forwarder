@@ -18,9 +18,7 @@ A versão **v0.2.0** reorganiza o projeto em uma arquitetura modular, melhora o 
 
 ## 📦 Downloads
 
-Baixe a versão mais recente pela página de releases:
-
-👉 [Telegram Media Forwarder v0.2.0]([https://github.com/sleepy907/telegram-media-forwarder/releases/tag/v0.2.0)
+Baixe a versão mais recente pela página de release
 
 Arquivos disponíveis:
 - **Windows:** `TelegramMediaForwarder-v0.2.0.exe`
