@@ -4,7 +4,7 @@
 
 O projeto permite encaminhar fotos, vídeos e documentos de uma origem do Telegram para um destino configurável, como **Mensagens Salvas**, grupos, canais ou bots, com controle de limite, delay, pausas automáticas, histórico de mídias já enviadas e login diretamente pelo próprio aplicativo.
 
-A nova versão possui uma arquitetura S.O.L.I.D modularizada, suporta preservação do layout de álbuns (mosaicos) e inclui opções de "Modo Limpo" para omitir a autoria original ou ocultar legendas das mídias.
+A versão atual possui arquitetura modular, preservação do layout de álbuns (mosaicos) e opções de "Modo Limpo" para omitir a autoria original ou ocultar legendas das mídias.
 
 ---
 
@@ -12,7 +12,19 @@ A nova versão possui uma arquitetura S.O.L.I.D modularizada, suporta preservaç
 
 Versão atual: **v0.2.0**
 
-A versão **v0.2.0** traz um enorme salto tecnológico para o aplicativo. A arquitetura monolítica foi desmembrada em um sistema modular e o repositório agora possui uma organização profissional de diretórios. Esta atualização eleva a ferramenta com melhorias críticas na velocidade, segurança do histórico (Batch RAM), repasse inteligente de álbuns e uma drástica evolução visual (*Catppuccin Macchiato*).
+A versão **v0.2.0** reorganiza o projeto em uma arquitetura modular, melhora o repasse inteligente de álbuns, adiciona recursos de privacidade no encaminhamento e renova a interface com a paleta *Catppuccin Macchiato*.
+
+---
+
+## 📦 Downloads
+
+Baixe a versão mais recente pela página de releases:
+
+👉 [Telegram Media Forwarder v0.2.0](https://github.com/sleepy907/telegram-media-forwarder/releases/tag/v0.2.0)
+
+Arquivos disponíveis:
+- **Windows:** `TelegramMediaForwarder-v0.2.0.exe`
+- **Linux x86_64:** `telegram-media-forwarder-0.2.0-linux-x86_64.tar.gz`
 
 ---
 
@@ -58,6 +70,23 @@ python main.py
 
 ---
 
+## ▶️ Como usar a versão baixada
+
+### Windows
+
+Baixe o arquivo `TelegramMediaForwarder-v0.2.0.exe` pela página de releases e execute normalmente.
+
+### Linux
+
+Baixe o pacote `.tar.gz`, extraia o arquivo e execute:
+
+```bash
+tar -xzf telegram-media-forwarder-0.2.0-linux-x86_64.tar.gz
+./TelegramMediaForwarder
+```
+
+---
+
 ## 🔐 Login no Telegram
 
 O aplicativo possui login integrado, sem necessidade de usar o terminal.
@@ -98,4 +127,4 @@ Respeite os termos de uso do Telegram.
 
 ---
 
-🔗 github.com/sleepy907/telegram-media-forwarder
+🔗 [github.com/sleepy907/telegram-media-forwarder](https://github.com/sleepy907/telegram-media-forwarder)
