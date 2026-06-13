@@ -10,7 +10,7 @@ LOGO_FILE = os.path.join("assets", "logo.png")
 
 UPDATE_URL = "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/update.json"
 CHANGELOG_URL = "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/CHANGELOG.md"
-LATEST_VERSION_PLACEHOLDER = "0.1.0"
+LATEST_VERSION_PLACEHOLDER = "0.2.0"
 
 THEMES = {
     "dark": {

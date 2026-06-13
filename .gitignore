@@ -22,6 +22,10 @@ docs/historico_desenvolvimento.md
 build/
 dist/
 *.spec
+*.exe
+*.tar.gz
+*.tgz
+*.zip
 
 # Sistema
 .DS_Store

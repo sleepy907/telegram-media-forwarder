@@ -4,13 +4,11 @@
 
     "changelog_url": "https://raw.githubusercontent.com/sleepy907/telegram-media-forwarder/main/CHANGELOG.md",
     "changelog": [
-        "Sistema real de atualização via update.json.",
-        "Importar/exportar histórico.",
-        "Tela de Ajuda dentro do aplicativo.",
-        "Logs mais claros e informativos.",
-        "Estatísticas mais claras com tempo restante estimado.",
-        "Correções de bugs da versão anterior.",
-        "Opção para salvar API Hash neste computador."
+        "Arquitetura modular com ponto de entrada em main.py e código organizado em src/.",
+        "Preservação de álbuns/mosaicos ao encaminhar mídias agrupadas.",
+        "Modo Limpo com opções para ocultar autor original e remover legenda/texto.",
+        "Histórico com gravação em lote e proteção try/finally para reduzir I/O e preservar progresso.",
+        "Interface redesenhada em Flat Design com paleta Catppuccin Macchiato.",
+        "Compatibilidade melhorada com PyInstaller para carregar assets no executável."
     ]
 }
-

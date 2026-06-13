@@ -1,18 +1,21 @@
-
 import os
-
-from .constantes import HISTORICO, CONFIG, SESSION
+import sys
 
 from telethon.tl.types import MessageMediaDocument, DocumentAttributeSticker
 
-
-def resource_dir():
-    # Retorna o diretório raiz (uma pasta acima do src)
-    return os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from .constantes import HISTORICO, CONFIG, SESSION
 
 
-def resource_path(filename):
-    return os.path.join(resource_dir(), filename)
+def resource_path(relative_path):
+    """Retorna o caminho absoluto do recurso, compatível com PyInstaller e dev."""
+    try:
+        # O PyInstaller cria uma pasta temporária em _MEIPASS
+        base_path = sys._MEIPASS
+    except Exception:
+        # Em dev, o arquivo atual está dentro de src/, então voltamos uma pasta
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    return os.path.join(base_path, relative_path)
 
 
 def app_dir():
